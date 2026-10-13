@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle de produtos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --tinta: #14201b;
+      --menu: #10241d;
+      --papel: #edf0eb;
+      --cartao: #ffffff;
+      --linha: #d9e0da;
+      --linha-suave: #e7ece8;
+      --etiqueta: #ffd23f;       /* amarelo da etiqueta de gôndola */
+      --ok: #17693f;
+      --ok-fundo: #dff1e6;
+      --baixo: #8a4f00;
+      --baixo-fundo: #fde7c2;
+      --zerado: #b3261e;
+      --zerado-fundo: #fbdcd9;
+      --texto-suave: #4d5b55;
+      --raio: 12px;
+      --sombra: 0 1px 2px rgba(20, 32, 27, 0.06), 0 6px 18px rgba(20, 32, 27, 0.05);
+      --fonte: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; font-family: var(--fonte); font-size: 1rem; line-height: 1.5; color: var(--tinta); background: var(--papel); }
+
+    a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
+    svg.icone { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* ---------- Estrutura ---------- */
+    .app { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+
+    /* ---------- Menu lateral ---------- */
+    .menu-lateral { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 32px; padding: 26px 16px; background: var(--menu); color: #cfdcd5; }
+
+    .marca { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
+    .marca-etiqueta { position: relative; flex: none; width: 46px; height: 46px; background: var(--etiqueta); border-radius: 8px 15px 15px 8px; }
+    .marca-etiqueta::before { content: ""; position: absolute; left: 7px; top: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--menu); }
+    .marca-etiqueta::after { content: ""; position: absolute; left: 11px; right: 8px; bottom: 8px; height: 15px;
+      background: repeating-linear-gradient(90deg, var(--tinta) 0 2px, transparent 2px 4px, var(--tinta) 4px 5px, transparent 5px 8px); }
+    .marca-texto strong { display: block; color: #fff; font-size: 1.1875rem; line-height: 1.15; font-weight: 800; font-stretch: 112%; }
+    .marca-texto small { display: block; margin-top: 2px; font-size: 0.8125rem; color: #9fb3a9; }
+
+    .menu { display: flex; flex-direction: column; gap: 4px; }
+    .menu a { display: flex; align-items: center; gap: 12px; padding: 11px 14px; color: #cfdcd5; text-decoration: none; font-weight: 600; border-radius: 10px; transition: background 0.15s; }
+    .menu a:hover { background: rgba(255, 255, 255, 0.08); }
+    .menu a[aria-current="page"] { background: var(--etiqueta); color: var(--tinta); }
+    .menu a:focus-visible { outline-color: var(--etiqueta); }
+    .menu a[aria-current="page"]:focus-visible { outline-color: #fff; }
+
+    /* ---------- Conteúdo ---------- */
+    .conteudo { min-width: 0; }
+
+    .barra-topo { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; max-width: 1120px; margin: 0 auto; padding: 36px 32px 0; }
+    .barra-topo h1 { margin: 0; font-size: 2.125rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.015em; font-stretch: 108%; }
+    .barra-topo .sub { margin: 8px 0 0; max-width: 58ch; color: var(--texto-suave); }
+    .lado { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .data { margin: 0; color: var(--texto-suave); font-size: 0.9375rem; }
+
+    .status { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 4px 12px; font-size: 0.875rem; font-weight: 600; background: var(--cartao); border: 1px solid var(--linha); border-radius: 99px; }
+    .status .ponto { width: 9px; height: 9px; border-radius: 50%; background: #8b9791; }
+    .status[data-estado="ok"] .ponto { background: #1f9d5b; }
+    .status[data-estado="erro"] .ponto { background: var(--zerado); }
+
+    main { max-width: 1120px; margin: 0 auto; padding: 24px 32px 64px; }
+    .tela[hidden] { display: none; }
+
+    .cartao { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); box-shadow: var(--sombra); }
+
+    h3 { margin: 0 0 4px; font-size: 1.0625rem; font-weight: 800; }
+
+    /* ---------- Indicadores ---------- */
+    .indicadores { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; margin: 0 0 20px; }
+    .ind { grid-column: span 2; margin: 0; padding: 16px 18px 18px; background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); box-shadow: var(--sombra); }
+    .ind-valor { grid-column: span 4; background: var(--tinta); border-color: var(--tinta); color: #fff; }
+    .ind dt { display: flex; align-items: center; gap: 10px; font-size: 0.875rem; font-weight: 600; color: var(--texto-suave); }
+    .ind-valor dt { color: #b9c9c0; }
+    .ind dd { margin: 10px 0 0; font-size: 1.875rem; line-height: 1.1; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+    .ind-valor dd { font-size: 2.5rem; color: var(--etiqueta); }
+    .ico { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 8px; background: var(--papel); color: var(--tinta); }
+    .ico .icone { width: 17px; height: 17px; }
+    .ind-valor .ico { background: rgba(255, 255, 255, 0.12); color: var(--etiqueta); }
+    .ind-baixo .ico { background: var(--baixo-fundo); color: var(--baixo); }
+    .ind-baixo dd { color: var(--baixo); }
+    .ind-zerado .ico { background: var(--zerado-fundo); color: var(--zerado); }
+    .ind-zerado dd { color: var(--zerado); }
+
+    /* ---------- Painel da tabela ---------- */
+    .painel { overflow: hidden; }
+    .ferramentas { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 16px 18px; border-bottom: 1px solid var(--linha); }
+    .filtros { display: flex; flex-wrap: wrap; gap: 8px; }
+    .direita { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .atualizado { color: var(--texto-suave); font-size: 0.875rem; }
+
+    .chip { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600; padding: 6px 12px 6px 14px; color: var(--tinta); background: #fff; border: 1.5px solid #8b9791; border-radius: 99px; cursor: pointer; transition: background 0.15s; }
+    .chip:hover { border-color: var(--tinta); background: #f3f6f3; }
+    .chip[aria-pressed="true"] { color: var(--etiqueta); background: var(--tinta); border-color: var(--tinta); }
+    .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: #8b9791; }
+    .chip .dot.ok { background: #1f9d5b; }
+    .chip .dot.baixo { background: #e09a00; }
+    .chip .dot.zerado { background: #d9453b; }
+    .chip .n { min-width: 22px; padding: 0 6px; font-size: 0.8125rem; text-align: center; font-variant-numeric: tabular-nums; background: var(--papel); color: var(--tinta); border-radius: 99px; }
+
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    input { width: 100%; font: inherit; padding: 11px 13px; color: var(--tinta); background: #fff; border: 1.5px solid #8b9791; border-radius: 8px; }
+    input:hover { border-color: var(--tinta); }
+    input::placeholder { color: #75837c; }
+
+    .busca { position: relative; width: min(100%, 280px); }
+    .busca input { padding-left: 38px; }
+    .busca .icone { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; margin-top: -9px; color: var(--texto-suave); pointer-events: none; }
+
+    .tabela-rolagem { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--linha-suave); vertical-align: middle; }
+    thead th { padding-top: 11px; padding-bottom: 11px; font-size: 0.8125rem; font-weight: 600; color: var(--texto-suave); background: #f6f8f5; white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fafbf9; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .ordenar { font: inherit; font-weight: 600; font-size: 0.8125rem; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+    .ordenar:hover { color: var(--tinta); }
+    th[aria-sort="ascending"] .ordenar, th[aria-sort="descending"] .ordenar { color: var(--tinta); }
+    th[aria-sort="ascending"] .ordenar::after { content: " ▲"; font-size: 0.7em; }
+    th[aria-sort="descending"] .ordenar::after { content: " ▼"; font-size: 0.7em; }
+
+    .produto { display: flex; align-items: center; gap: 12px; }
+    .avatar { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; font-weight: 800; font-size: 1.0625rem; }
+    .av0 { background: #dff1e6; color: #17693f; }
+    .av1 { background: #fde7c2; color: #8a4f00; }
+    .av2 { background: #dbe8fb; color: #1f4e8c; }
+    .av3 { background: #f6dcf0; color: #8a2a74; }
+    .av4 { background: #d6efee; color: #0f6b66; }
+    .produto-nome { display: block; font-weight: 700; line-height: 1.25; }
+    .produto-codigo { display: block; margin-top: 2px; font-size: 0.8125rem; color: var(--texto-suave); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+    /* Preço no formato de etiqueta de gôndola */
+    .preco { position: relative; display: inline-block; min-width: 100px; padding: 5px 11px 5px 24px; background: var(--etiqueta); border-radius: 4px 9px 9px 4px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; }
+    .preco::before { content: ""; position: absolute; left: 8px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--cartao); }
+
+    .estoque { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+    .estoque-linha { display: inline-flex; align-items: baseline; gap: 8px; }
+    .estoque-linha strong { font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+    .barra { display: block; width: 108px; height: 5px; background: #e1e7e2; border-radius: 3px; overflow: hidden; }
+    .barra i { display: block; height: 100%; border-radius: 3px; }
+    .barra i.ok { background: #1f9d5b; }
+    .barra i.baixo { background: #e09a00; }
+    .barra i.zerado { background: #d9453b; }
+
+    .selo { font-size: 0.8125rem; font-weight: 600; padding: 2px 9px; border-radius: 99px; }
+    .selo.ok { color: var(--ok); background: var(--ok-fundo); }
+    .selo.baixo { color: var(--baixo); background: var(--baixo-fundo); }
+    .selo.zerado { color: var(--zerado); background: var(--zerado-fundo); }
+
+    .vazio { padding: 44px 20px; text-align: center; color: var(--texto-suave); }
+    .vazio[hidden] { display: none; }
+    .vazio p { margin: 0 0 14px; }
+    .vazio p:last-child { margin-bottom: 0; }
+
+    /* ---------- Botões ---------- */
+    .botao { display: inline-block; font: inherit; font-weight: 800; padding: 11px 20px; color: var(--etiqueta); background: var(--tinta); border: 2px solid var(--tinta); border-radius: 8px; cursor: pointer; text-decoration: none; transition: background 0.15s; }
+    .botao:hover { background: #26352f; }
+    .botao:disabled { opacity: 0.5; cursor: not-allowed; }
+    .botao.secundario { color: var(--tinta); background: transparent; }
+    .botao.secundario:hover { background: #e7ece8; }
+    .botao.secundario:disabled:hover { background: transparent; }
+    .botao.pequeno { padding: 6px 13px; font-size: 0.9375rem; }
+
+    /* ---------- Formulários ---------- */
+    .duas-colunas { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 380px); gap: 24px; align-items: start; }
+    .formulario { display: grid; gap: 18px; padding: 28px; }
+    .campos-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+    .dica { margin: 6px 0 0; font-size: 0.875rem; color: var(--texto-suave); }
+
+    .mensagem, .aviso { margin: 0; padding: 11px 14px; border-left: 4px solid var(--tinta); border-radius: 0 8px 8px 0; background: var(--papel); overflow-wrap: anywhere; }
+    .mensagem[hidden], .aviso[hidden] { display: none; }
+    .mensagem.sucesso { border-color: var(--ok); background: var(--ok-fundo); }
+    .mensagem.erro, .aviso { border-color: var(--zerado); background: var(--zerado-fundo); }
+    .aviso { margin-bottom: 16px; }
+
+    /* ---------- Etiqueta pendurada na gôndola (cadastro) ---------- */
+    .gondola { overflow: hidden; padding: 24px 24px 0; }
+    .gondola .dica { margin: 0 0 22px; }
+    .etiqueta { position: relative; max-width: 310px; margin: 0 auto; padding: 30px 20px 16px; background: var(--etiqueta); border-radius: 6px; transform: rotate(-1.5deg); box-shadow: 0 6px 14px rgba(20, 32, 27, 0.22); }
+    .etiqueta::before { content: ""; position: absolute; top: 10px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--cartao); box-shadow: inset 0 1px 2px rgba(20, 32, 27, 0.35); }
+    .etiqueta p { margin: 0; }
+    .etiqueta-nome { font-size: 1.125rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+    .etiqueta-preco { margin-top: 10px; font-size: 2.75rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .etiqueta-barras { height: 38px; margin-top: 16px; background: repeating-linear-gradient(90deg, var(--tinta) 0 2px, transparent 2px 4px, var(--tinta) 4px 5px, transparent 5px 8px, var(--tinta) 8px 11px, transparent 11px 12px); }
+    .etiqueta-codigo { margin-top: 6px; font-size: 0.875rem; font-variant-numeric: tabular-nums; letter-spacing: 0.12em; overflow-wrap: anywhere; }
+    .etiqueta-estoque { margin-top: 10px; padding-top: 10px; border-top: 1.5px solid rgba(20, 32, 27, 0.3); font-weight: 600; }
+    .trilho { height: 16px; margin: 30px -24px 0; background: linear-gradient(#dde3de, #b3beb7 70%, #9aa7a0); border-top: 1px solid #fff; }
+
+    /* ---------- Frente de caixa ---------- */
+    .previa { display: grid; gap: 4px; padding: 14px 16px; background: #f7f9f6; border: 1px solid var(--linha); border-left: 5px solid var(--etiqueta); border-radius: 8px; }
+    .previa[hidden] { display: none; }
+    .previa-nome { margin: 0 0 4px; font-weight: 800; }
+    .previa .linha { display: flex; justify-content: space-between; gap: 12px; }
+    .previa .linha span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .previa .total { margin-top: 8px; padding: 9px 12px; background: var(--etiqueta); border-radius: 6px; font-weight: 800; }
+    .previa .total span:last-child { font-weight: 800; font-size: 1.1875rem; }
+    .previa .alerta { margin: 6px 0 0; color: var(--zerado); font-weight: 600; }
+    .previa .dica { margin: 2px 0 0; }
+
+    /* Cupom da sessão */
+    .cupom { position: relative; margin-bottom: 12px; padding: 22px 22px 24px; background: #fff; filter: drop-shadow(0 1px 2px rgba(20, 32, 27, 0.2)); }
+    .cupom::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 8px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Cpolygon points='0,0 16,0 8,8' fill='%23ffffff'/%3E%3C/svg%3E") repeat-x; }
+    .cupom h3 { padding-bottom: 12px; margin-bottom: 4px; text-align: center; border-bottom: 1.5px dashed #b4beb7; }
+    .vazio-pequeno { margin: 12px 0 0; text-align: center; color: var(--texto-suave); }
+    .vazio-pequeno[hidden] { display: none; }
+    .lista-sessao { list-style: none; margin: 0; padding: 0; }
+    .lista-sessao li { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px dashed #d1d9d3; }
+    .lista-sessao .detalhe { display: block; font-size: 0.875rem; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+    .lista-sessao .valor { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .sessao-total { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed #b4beb7; font-size: 1.1875rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .sessao-total[hidden] { display: none; }
+
+    .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* ---------- Telas menores ---------- */
+    @media (max-width: 1100px) {
+      .ind, .ind-valor { grid-column: span 6; }
+      .ind-valor { grid-column: span 12; }
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .menu-lateral { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 14px 16px; }
+      .menu { flex-direction: row; flex-wrap: wrap; }
+      .menu a { padding: 9px 12px; }
+      .barra-topo { padding: 24px 16px 0; }
+      .barra-topo h1 { font-size: 1.75rem; }
+      .lado { align-items: flex-start; }
+      main { padding: 20px 16px 48px; }
+      .duas-colunas { grid-template-columns: 1fr; }
+      .formulario { padding: 20px 16px; }
+    }
+    @media (max-width: 520px) {
+      .campos-2 { grid-template-columns: 1fr; }
+      .ind { grid-column: span 12; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <aside class="menu-lateral">
+      <div class="marca">
+        <span class="marca-etiqueta" aria-hidden="true"></span>
+        <div class="marca-texto">
+          <strong>Supermercado</strong>
+          <small>Controle de produtos</small>
+        </div>
+      </div>
+
+      <nav class="menu" aria-label="Seções">
+        <a href="#produtos" data-aba="produtos">
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+          Produtos
+        </a>
+        <a href="#cadastrar" data-aba="cadastrar">
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+          Cadastrar
+        </a>
+        <a href="#caixa" data-aba="caixa">
+          <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.6 12.4a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 7H6"/></svg>
+          Frente de caixa
+        </a>
+      </nav>
+    </aside>
+
+    <div class="conteudo">
+      <header class="barra-topo">
+        <div>
+          <h1 id="titulo-pagina">Produtos em estoque</h1>
+          <p class="sub" id="sub-pagina"></p>
+        </div>
+        <div class="lado">
+          <p class="data" id="data-hoje"></p>
+          <p class="status" id="status-servidor" data-estado="conectando" aria-live="polite">
+            <span class="ponto" aria-hidden="true"></span><span id="status-texto">Conectando…</span>
+          </p>
+        </div>
+      </header>
+
+      <main>
+        <!-- PRODUTOS -->
+        <section id="produtos" class="tela" aria-labelledby="titulo-pagina">
+          <p id="msg-produtos" class="aviso" role="alert" hidden></p>
+
+          <dl class="indicadores">
+            <div class="ind ind-valor">
+              <dt><span class="ico"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.2c-.6-.8-1.5-1.2-2.5-1.2-1.4 0-2.5.8-2.5 1.9 0 2.7 5.2 1.3 5.2 4 0 1.1-1.1 1.9-2.7 1.9-1.1 0-2.1-.5-2.7-1.3M12 6.5V8M12 16v1.5"/></svg></span>Valor em estoque</dt>
+              <dd id="i-valor">–</dd>
+            </div>
+            <div class="ind">
+              <dt><span class="ico"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg></span>Produtos cadastrados</dt>
+              <dd id="i-produtos">–</dd>
+            </div>
+            <div class="ind">
+              <dt><span class="ico"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span>Unidades em estoque</dt>
+              <dd id="i-unidades">–</dd>
+            </div>
+            <div class="ind ind-baixo">
+              <dt><span class="ico"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l10 18H2L12 3z"/><path d="M12 10v5M12 18v.5"/></svg></span>Com estoque baixo</dt>
+              <dd id="i-baixos">–</dd>
+            </div>
+            <div class="ind ind-zerado">
+              <dt><span class="ico"><svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></span>Zerados</dt>
+              <dd id="i-zerados">–</dd>
+            </div>
+          </dl>
+
+          <div class="cartao painel">
+            <div class="ferramentas">
+              <div class="filtros" id="filtros" role="group" aria-label="Filtrar por situação do estoque">
+                <button type="button" class="chip" data-filtro="todos" aria-pressed="true">Todos<span class="n" id="n-todos">0</span></button>
+                <button type="button" class="chip" data-filtro="ok" aria-pressed="false"><span class="dot ok"></span>Em estoque<span class="n" id="n-ok">0</span></button>
+                <button type="button" class="chip" data-filtro="baixo" aria-pressed="false"><span class="dot baixo"></span>Baixo<span class="n" id="n-baixo">0</span></button>
+                <button type="button" class="chip" data-filtro="zerado" aria-pressed="false"><span class="dot zerado"></span>Zerado<span class="n" id="n-zerado">0</span></button>
+              </div>
+              <div class="direita">
+                <span id="atualizado" class="atualizado" aria-live="polite"></span>
+                <button type="button" id="btn-atualizar" class="botao secundario pequeno">Atualizar lista</button>
+                <div class="busca">
+                  <label for="busca" class="so-leitor">Buscar por nome ou código</label>
+                  <svg class="icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                  <input id="busca" type="search" placeholder="Buscar por nome ou código" autocomplete="off">
+                </div>
+              </div>
+            </div>
+
+            <div class="tabela-rolagem">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col" data-campo="nome" aria-sort="ascending"><button type="button" class="ordenar" data-ordem="nome">Produto</button></th>
+                    <th scope="col" class="num" data-campo="preco" aria-sort="none"><button type="button" class="ordenar" data-ordem="preco">Preço</button></th>
+                    <th scope="col" class="num" data-campo="estoque" aria-sort="none"><button type="button" class="ordenar" data-ordem="estoque">Estoque</button></th>
+                    <th scope="col" class="num" data-campo="valor" aria-sort="none"><button type="button" class="ordenar" data-ordem="valor">Valor em estoque</button></th>
+                    <th scope="col"><span class="so-leitor">Ações</span></th>
+                  </tr>
+                </thead>
+                <tbody id="corpo-produtos"></tbody>
+              </table>
+            </div>
+            <div id="vazio" class="vazio"><p>Carregando produtos…</p></div>
+          </div>
+        </section>
+
+        <!-- CADASTRAR -->
+        <section id="cadastrar" class="tela" aria-labelledby="titulo-pagina" hidden>
+          <div class="duas-colunas">
+            <form id="form-cadastro" class="cartao formulario" novalidate>
+              <div class="campo">
+                <label for="c-codigo">Código de barras</label>
+                <input id="c-codigo" name="codigoBarras" type="text" inputmode="numeric" autocomplete="off" required>
+                <p class="dica">Cada código só pode ser cadastrado uma vez.</p>
+              </div>
+              <div class="campo">
+                <label for="c-nome">Nome do produto</label>
+                <input id="c-nome" name="nome" type="text" autocomplete="off" required>
+              </div>
+              <div class="campos-2">
+                <div class="campo">
+                  <label for="c-preco">Preço (R$)</label>
+                  <input id="c-preco" name="preco" type="number" min="0.01" step="0.01" inputmode="decimal" required>
+                </div>
+                <div class="campo">
+                  <label for="c-estoque">Estoque inicial</label>
+                  <input id="c-estoque" name="quantidadeEstoque" type="number" min="0" step="1" inputmode="numeric" required>
+                </div>
+              </div>
+              <div class="acoes">
+                <button type="submit" class="botao">Cadastrar produto</button>
+              </div>
+              <p id="msg-cadastro" class="mensagem" role="alert" hidden></p>
+            </form>
+
+            <aside class="cartao gondola" aria-labelledby="t-etiqueta">
+              <h3 id="t-etiqueta">Etiqueta do produto</h3>
+              <p class="dica">Atualiza enquanto você digita.</p>
+              <div class="etiqueta">
+                <p class="etiqueta-nome" id="e-nome">Nome do produto</p>
+                <p class="etiqueta-preco" id="e-preco">R$ 0,00</p>
+                <div class="etiqueta-barras" aria-hidden="true"></div>
+                <p class="etiqueta-codigo" id="e-codigo">0000000000000</p>
+                <p class="etiqueta-estoque" id="e-estoque">0 unidades em estoque</p>
+              </div>
+              <div class="trilho" aria-hidden="true"></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- FRENTE DE CAIXA -->
+        <section id="caixa" class="tela" aria-labelledby="titulo-pagina" hidden>
+          <div class="duas-colunas">
+            <form id="form-caixa" class="cartao formulario" novalidate>
+              <div class="campos-2">
+                <div class="campo">
+                  <label for="v-codigo">Código de barras</label>
+                  <input id="v-codigo" type="text" inputmode="numeric" autocomplete="off" required>
+                </div>
+                <div class="campo">
+                  <label for="v-qtd">Quantidade</label>
+                  <input id="v-qtd" type="number" min="1" step="1" value="1" inputmode="numeric" required>
+                </div>
+              </div>
+
+              <div id="previa-produto" class="previa" aria-live="polite" hidden></div>
+
+              <div class="acoes">
+                <button type="button" id="btn-consultar" class="botao secundario">Consultar estoque</button>
+                <button type="submit" class="botao">Registrar venda</button>
+              </div>
+              <p id="msg-caixa" class="mensagem" role="alert" hidden></p>
+            </form>
+
+            <aside class="cupom" aria-labelledby="t-sessao">
+              <h3 id="t-sessao">Vendas desta sessão</h3>
+              <p id="sessao-vazia" class="vazio-pequeno">Nenhuma venda registrada ainda.</p>
+              <ol id="lista-sessao" class="lista-sessao"></ol>
+              <div id="sessao-total" class="sessao-total" hidden>
+                <span id="sessao-itens"></span>
+                <span id="sessao-valor"></span>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // Front-end do Controle de Produtos.
+    // Usa os endpoints do back-end:
+    //   GET  /produtos                      -> lista os produtos
+    //   POST /produtos                      -> cadastra um produto
+    //   GET  /estoque/quantidade/{codigo}   -> consulta o estoque
+    //   POST /estoque/venda-item            -> registra a venda (baixa no estoque)
+
+    const ESTOQUE_BAIXO = 5; // até esta quantidade o produto aparece como "baixo"
+
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    const inteiro = new Intl.NumberFormat("pt-BR");
+    const $ = (seletor) => document.querySelector(seletor);
+
+    function el(tag, classe, texto) {
+      const e = document.createElement(tag);
+      if (classe) e.className = classe;
+      if (texto !== undefined) e.textContent = texto;
+      return e;
+    }
+
+    let produtos = [];
+    let erroDeCarga = false;
+    let filtro = "todos";
+    let ordem = { campo: "nome", direcao: "asc" };
+    const vendasDaSessao = [];
+
+    /* ---------- Comunicação com o servidor ---------- */
+
+    function extrairMensagem(corpo, status) {
+      if (!corpo) return "Erro " + status + " no servidor.";
+      // Resposta em HTML = não é o back-end do projeto (ex.: página aberta fora do localhost:8080).
+      if (corpo.trimStart().startsWith("<")) {
+        return "O endereço não foi encontrado (erro " + status + "). Rode o projeto e abra http://localhost:8080 no navegador.";
+      }
+      try {
+        const json = JSON.parse(corpo);
+        if (json && typeof json === "object") return json.message || json.error || corpo;
+      } catch (e) { /* o back-end responde texto puro nos erros de regra de negócio */ }
+      return corpo;
+    }
+
+    async function requisitar(url, opcoes) {
+      let resposta;
+      try {
+        resposta = await fetch(url, opcoes);
+      } catch (e) {
+        throw new Error("Não foi possível falar com o servidor. Confira se a aplicação está rodando em localhost:8080.");
+      }
+      const corpo = await resposta.text();
+      if (!resposta.ok) throw new Error(extrairMensagem(corpo, resposta.status));
+      return corpo;
+    }
+
+    function enviarJson(url, dados) {
+      return requisitar(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados)
+      });
+    }
+
+    function definirStatus(estado, texto) {
+      $("#status-servidor").dataset.estado = estado;
+      $("#status-texto").textContent = texto;
+    }
+
+    /* ---------- Mensagens ---------- */
+
+    function mostrarMensagem(elemento, texto, tipo) {
+      elemento.textContent = texto;
+      elemento.className = "mensagem " + tipo;
+      elemento.hidden = false;
+    }
+
+    function limparMensagem(elemento) {
+      elemento.hidden = true;
+      elemento.textContent = "";
+    }
+
+    /* ---------- Navegação entre as telas ---------- */
+
+    const TELAS = ["produtos", "cadastrar", "caixa"];
+
+    const PAGINAS = {
+      produtos: {
+        titulo: "Produtos em estoque",
+        sub: "Veja o que está na loja, o que está acabando e quanto vale o estoque."
+      },
+      cadastrar: {
+        titulo: "Cadastrar produto",
+        sub: "Inclua um item novo. A etiqueta ao lado mostra como ele fica na gôndola."
+      },
+      caixa: {
+        titulo: "Frente de caixa",
+        sub: "Digite o código de barras, confira o total e registre a venda."
+      }
+    };
+
+    function irParaTela() {
+      const atual = TELAS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "produtos";
+      TELAS.forEach((nome) => {
+        $("#" + nome).hidden = nome !== atual;
+        const aba = document.querySelector('[data-aba="' + nome + '"]');
+        if (nome === atual) aba.setAttribute("aria-current", "page");
+        else aba.removeAttribute("aria-current");
+      });
+      $("#titulo-pagina").textContent = PAGINAS[atual].titulo;
+      $("#sub-pagina").textContent = PAGINAS[atual].sub;
+      document.title = PAGINAS[atual].titulo + " | Controle de produtos";
+      // A lista é recarregada ao entrar em Produtos ou no Caixa, para refletir cadastros e vendas.
+      if (atual === "produtos" || atual === "caixa") carregarProdutos();
+    }
+
+    /* ---------- Cálculos da lista ---------- */
+
+    const preco = (p) => Number(p.preco) || 0;
+    const estoqueDe = (p) => Number(p.quantidadeEstoque) || 0;
+    const valorEmEstoque = (p) => preco(p) * estoqueDe(p);
+
+    function situacaoEstoque(qtd) {
+      if (qtd <= 0) return { classe: "zerado", texto: "Zerado" };
+      if (qtd <= ESTOQUE_BAIXO) return { classe: "baixo", texto: "Baixo" };
+      return { classe: "ok", texto: "Em estoque" };
+    }
+
+    const COMPARADORES = {
+      nome: (a, b) => String(a.nome).localeCompare(String(b.nome), "pt-BR"),
+      preco: (a, b) => preco(a) - preco(b),
+      estoque: (a, b) => estoqueDe(a) - estoqueDe(b),
+      valor: (a, b) => valorEmEstoque(a) - valorEmEstoque(b)
+    };
+
+    function classeAvatar(nome) {
+      let soma = 0;
+      for (const c of String(nome)) soma += c.codePointAt(0);
+      return "av" + (soma % 5);
+    }
+
+    function inicial(nome) {
+      const texto = String(nome).trim();
+      return texto ? texto[0].toUpperCase() : "?";
+    }
+
+    /* ---------- Tela de produtos ---------- */
+
+    function criarLinha(p, maiorEstoque) {
+      const qtd = estoqueDe(p);
+      const situacao = situacaoEstoque(qtd);
+      const tr = el("tr");
+
+      const tdProduto = el("td");
+      const bloco = el("div", "produto");
+      const avatar = el("span", "avatar " + classeAvatar(p.nome), inicial(p.nome));
+      avatar.setAttribute("aria-hidden", "true");
+      const textos = el("div");
+      textos.append(el("span", "produto-nome", p.nome), el("span", "produto-codigo", p.codigoBarras));
+      bloco.append(avatar, textos);
+      tdProduto.append(bloco);
+      tr.append(tdProduto);
+
+      const tdPreco = el("td", "num");
+      tdPreco.append(el("span", "preco", brl.format(preco(p))));
+      tr.append(tdPreco);
+
+      const tdEstoque = el("td", "num");
+      const estoque = el("div", "estoque");
+      const linha = el("div", "estoque-linha");
+      linha.append(el("strong", "", String(qtd)), el("span", "selo " + situacao.classe, situacao.texto));
+      const barra = el("span", "barra");
+      barra.setAttribute("aria-hidden", "true");
+      const preenchimento = el("i", situacao.classe);
+      const pct = qtd <= 0 ? 0 : Math.max(6, Math.min(100, Math.round((qtd / maiorEstoque) * 100)));
+      preenchimento.style.width = pct + "%";
+      barra.append(preenchimento);
+      estoque.append(linha, barra);
+      tdEstoque.append(estoque);
+      tr.append(tdEstoque);
+
+      tr.append(el("td", "num", brl.format(valorEmEstoque(p))));
+
+      const tdAcao = el("td", "num");
+      const botao = el("button", "botao secundario pequeno", "Vender");
+      botao.type = "button";
+      botao.setAttribute("aria-label", "Vender " + p.nome);
+      if (qtd <= 0) {
+        botao.disabled = true;
+        botao.title = "Produto sem estoque";
+      } else {
+        botao.addEventListener("click", () => venderProduto(p));
+      }
+      tdAcao.append(botao);
+      tr.append(tdAcao);
+      return tr;
+    }
+
+    function desenharIndicadores() {
+      const total = produtos.length;
+      const zerados = produtos.filter((p) => estoqueDe(p) <= 0).length;
+      const baixos = produtos.filter((p) => estoqueDe(p) > 0 && estoqueDe(p) <= ESTOQUE_BAIXO).length;
+      const ok = total - zerados - baixos;
+
+      const sem = erroDeCarga;
+      $("#i-produtos").textContent = sem ? "–" : inteiro.format(total);
+      $("#i-unidades").textContent = sem ? "–" : inteiro.format(produtos.reduce((s, p) => s + estoqueDe(p), 0));
+      $("#i-valor").textContent = sem ? "–" : brl.format(produtos.reduce((s, p) => s + valorEmEstoque(p), 0));
+      $("#i-baixos").textContent = sem ? "–" : inteiro.format(baixos);
+      $("#i-zerados").textContent = sem ? "–" : inteiro.format(zerados);
+
+      $("#n-todos").textContent = total;
+      $("#n-ok").textContent = ok;
+      $("#n-baixo").textContent = baixos;
+      $("#n-zerado").textContent = zerados;
+    }
+
+    function passaNoFiltro(p) {
+      const qtd = estoqueDe(p);
+      if (filtro === "ok") return qtd > ESTOQUE_BAIXO;
+      if (filtro === "baixo") return qtd > 0 && qtd <= ESTOQUE_BAIXO;
+      if (filtro === "zerado") return qtd <= 0;
+      return true;
+    }
+
+    function desenharTabela() {
+      const termo = $("#busca").value.trim().toLowerCase();
+      const comparar = COMPARADORES[ordem.campo];
+      const sinal = ordem.direcao === "asc" ? 1 : -1;
+
+      const visiveis = produtos
+        .filter(passaNoFiltro)
+        .filter((p) => String(p.nome).toLowerCase().includes(termo) || String(p.codigoBarras).toLowerCase().includes(termo))
+        .sort((a, b) => sinal * comparar(a, b));
+
+      const maiorEstoque = Math.max(1, ...produtos.map(estoqueDe));
+      $("#corpo-produtos").replaceChildren(...visiveis.map((p) => criarLinha(p, maiorEstoque)));
+
+      document.querySelectorAll("th[data-campo]").forEach((th) => {
+        th.setAttribute("aria-sort", th.dataset.campo === ordem.campo
+          ? (ordem.direcao === "asc" ? "ascending" : "descending")
+          : "none");
+      });
+
+      const vazio = $("#vazio");
+      if (erroDeCarga) {
+        vazio.hidden = true;
+      } else if (produtos.length === 0) {
+        const cadastrar = el("a", "botao pequeno", "Cadastrar o primeiro produto");
+        cadastrar.href = "#cadastrar";
+        vazio.replaceChildren(el("p", "", "Nenhum produto cadastrado ainda."), cadastrar);
+        vazio.hidden = false;
+      } else if (visiveis.length === 0) {
+        vazio.replaceChildren(el("p", "", "Nenhum produto encontrado com esses filtros."));
+        vazio.hidden = false;
+      } else {
+        vazio.hidden = true;
+      }
+    }
+
+    function desenharTudo() {
+      desenharIndicadores();
+      desenharTabela();
+      atualizarPreviaCaixa();
+    }
+
+    async function carregarProdutos() {
+      const aviso = $("#msg-produtos");
+      const botao = $("#btn-atualizar");
+      botao.disabled = true;
+      try {
+        produtos = JSON.parse(await requisitar("/produtos"));
+        erroDeCarga = false;
+        aviso.hidden = true;
+        definirStatus("ok", "Servidor conectado");
+        $("#atualizado").textContent = "Atualizado às " +
+          new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      } catch (erro) {
+        produtos = [];
+        erroDeCarga = true;
+        aviso.textContent = erro.message;
+        aviso.hidden = false;
+        definirStatus("erro", "Sem conexão com o servidor");
+        $("#atualizado").textContent = "";
+      } finally {
+        botao.disabled = false;
+      }
+      desenharTudo();
+    }
+
+    function venderProduto(produto) {
+      $("#v-codigo").value = produto.codigoBarras;
+      $("#v-qtd").value = 1;
+      limparMensagem($("#msg-caixa"));
+      atualizarPreviaCaixa();
+      location.hash = "#caixa";
+      $("#v-qtd").focus();
+      $("#v-qtd").select();
+    }
+
+    $("#btn-atualizar").addEventListener("click", carregarProdutos);
+    $("#busca").addEventListener("input", desenharTabela);
+
+    $("#filtros").addEventListener("click", (evento) => {
+      const chip = evento.target.closest("[data-filtro]");
+      if (!chip) return;
+      filtro = chip.dataset.filtro;
+      document.querySelectorAll("#filtros .chip").forEach((c) =>
+        c.setAttribute("aria-pressed", String(c === chip)));
+      desenharTabela();
+    });
+
+    document.querySelector("thead").addEventListener("click", (evento) => {
+      const botao = evento.target.closest("[data-ordem]");
+      if (!botao) return;
+      const campo = botao.dataset.ordem;
+      ordem = campo === ordem.campo
+        ? { campo, direcao: ordem.direcao === "asc" ? "desc" : "asc" }
+        : { campo, direcao: "asc" };
+      desenharTabela();
+    });
+
+    /* ---------- Cadastro ---------- */
+
+    function atualizarEtiqueta() {
+      const nome = $("#c-nome").value.trim();
+      const valor = Number($("#c-preco").value);
+      const codigo = $("#c-codigo").value.trim();
+      const qtd = Number($("#c-estoque").value);
+      const unidades = Number.isInteger(qtd) && qtd > 0 ? qtd : 0;
+
+      $("#e-nome").textContent = nome || "Nome do produto";
+      $("#e-preco").textContent = brl.format(valor > 0 ? valor : 0);
+      $("#e-codigo").textContent = codigo || "0000000000000";
+      $("#e-estoque").textContent = unidades + (unidades === 1 ? " unidade em estoque" : " unidades em estoque");
+    }
+
+    ["#c-codigo", "#c-nome", "#c-preco", "#c-estoque"].forEach((id) =>
+      $(id).addEventListener("input", atualizarEtiqueta));
+
+    $("#form-cadastro").addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const msg = $("#msg-cadastro");
+      const botao = evento.submitter;
+      limparMensagem(msg);
+
+      const dados = {
+        codigoBarras: $("#c-codigo").value.trim(),
+        nome: $("#c-nome").value.trim(),
+        preco: $("#c-preco").value === "" ? null : Number($("#c-preco").value),
+        quantidadeEstoque: $("#c-estoque").value === "" ? null : Number($("#c-estoque").value)
+      };
+
+      botao.disabled = true;
+      try {
+        // As regras de validação ficam no back-end (ProdutoService); aqui só mostramos o resultado.
+        const criado = JSON.parse(await enviarJson("/produtos", dados));
+        mostrarMensagem(msg, "Produto cadastrado: " + criado.nome + ".", "sucesso");
+        evento.target.reset();
+        atualizarEtiqueta();
+        $("#c-codigo").focus();
+      } catch (erro) {
+        mostrarMensagem(msg, erro.message, "erro");
+      } finally {
+        botao.disabled = false;
+      }
+    });
+
+    /* ---------- Frente de caixa ---------- */
+
+    function lerCodigoEQuantidade() {
+      const codigo = $("#v-codigo").value.trim();
+      const quantidade = $("#v-qtd").value === "" ? null : Number($("#v-qtd").value);
+      return { codigo, quantidade };
+    }
+
+    function acharProduto(codigo) {
+      return produtos.find((p) => String(p.codigoBarras) === codigo);
+    }
+
+    function linhaPrevia(rotulo, valor, classe) {
+      const linha = el("div", "linha" + (classe ? " " + classe : ""));
+      linha.append(el("span", "", rotulo), el("span", "", valor));
+      return linha;
+    }
+
+    function atualizarPreviaCaixa() {
+      const caixa = $("#previa-produto");
+      const { codigo, quantidade } = lerCodigoEQuantidade();
+      caixa.replaceChildren();
+
+      if (!codigo) {
+        caixa.hidden = true;
+        return;
+      }
+      caixa.hidden = false;
+
+      const produto = acharProduto(codigo);
+      if (!produto) {
+        caixa.append(el("p", "previa-nome", "Produto não encontrado na lista."));
+        caixa.append(el("p", "dica", "Confira o código ou cadastre o produto na aba Cadastrar."));
+        return;
+      }
+
+      caixa.append(el("p", "previa-nome", produto.nome));
+      caixa.append(linhaPrevia("Preço unitário", brl.format(preco(produto))));
+      caixa.append(linhaPrevia("Estoque disponível", inteiro.format(estoqueDe(produto))));
+
+      if (Number.isInteger(quantidade) && quantidade > 0) {
+        caixa.append(linhaPrevia("Total da venda", brl.format(preco(produto) * quantidade), "total"));
+        if (quantidade > estoqueDe(produto)) {
+          caixa.append(el("p", "alerta", "A quantidade é maior que o estoque disponível."));
+        }
+      }
+    }
+
+    $("#v-codigo").addEventListener("input", atualizarPreviaCaixa);
+    $("#v-qtd").addEventListener("input", atualizarPreviaCaixa);
+
+    $("#btn-consultar").addEventListener("click", async () => {
+      const msg = $("#msg-caixa");
+      const { codigo } = lerCodigoEQuantidade();
+      if (!codigo) {
+        mostrarMensagem(msg, "Informe o código de barras para consultar o estoque.", "erro");
+        return;
+      }
+      try {
+        const qtd = await requisitar("/estoque/quantidade/" + encodeURIComponent(codigo));
+        mostrarMensagem(msg, "Estoque atual do código " + codigo + ": " + qtd + ".", "sucesso");
+      } catch (erro) {
+        mostrarMensagem(msg, erro.message, "erro");
+      }
+    });
+
+    $("#form-caixa").addEventListener("submit", async (evento) => {
+      evento.preventDefault();
+      const msg = $("#msg-caixa");
+      const botao = evento.submitter;
+      const { codigo, quantidade } = lerCodigoEQuantidade();
+
+      if (!codigo) {
+        mostrarMensagem(msg, "Informe o código de barras.", "erro");
+        return;
+      }
+      if (!Number.isInteger(quantidade) || quantidade <= 0) {
+        mostrarMensagem(msg, "A quantidade deve ser um número inteiro maior que zero.", "erro");
+        return;
+      }
+
+      botao.disabled = true;
+      try {
+        const resposta = await enviarJson("/estoque/venda-item", { codigoBarras: codigo, quantidade });
+        mostrarMensagem(msg, resposta, "sucesso");
+        registrarNaSessao(codigo, quantidade);
+        $("#v-codigo").value = "";
+        $("#v-qtd").value = 1;
+        $("#v-codigo").focus();
+        await carregarProdutos(); // atualiza estoque e indicadores depois da baixa
+      } catch (erro) {
+        mostrarMensagem(msg, erro.message, "erro");
+      } finally {
+        botao.disabled = false;
+      }
+    });
+
+    function registrarNaSessao(codigo, quantidade) {
+      const produto = acharProduto(codigo);
+      vendasDaSessao.unshift({
+        nome: produto ? produto.nome : "Código " + codigo,
+        quantidade,
+        unitario: produto ? preco(produto) : null
+      });
+      desenharSessao();
+    }
+
+    function desenharSessao() {
+      const lista = $("#lista-sessao");
+      lista.replaceChildren(...vendasDaSessao.map((v) => {
+        const item = el("li");
+        const esquerda = el("div");
+        esquerda.append(el("span", "", v.nome));
+        esquerda.append(el("span", "detalhe", v.unitario === null
+          ? v.quantidade + (v.quantidade === 1 ? " unidade" : " unidades")
+          : v.quantidade + " × " + brl.format(v.unitario)));
+        item.append(esquerda);
+        if (v.unitario !== null) item.append(el("span", "valor", brl.format(v.unitario * v.quantidade)));
+        return item;
+      }));
+
+      const itens = vendasDaSessao.reduce((s, v) => s + v.quantidade, 0);
+      const valor = vendasDaSessao.reduce((s, v) => s + (v.unitario === null ? 0 : v.unitario * v.quantidade), 0);
+      $("#sessao-vazia").hidden = vendasDaSessao.length > 0;
+      $("#sessao-total").hidden = vendasDaSessao.length === 0;
+      $("#sessao-itens").textContent = "Total (" + itens + (itens === 1 ? " item)" : " itens)");
+      $("#sessao-valor").textContent = brl.format(valor);
+    }
+
+    /* ---------- Início ---------- */
+
+    const hoje = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+    $("#data-hoje").textContent = hoje.charAt(0).toUpperCase() + hoje.slice(1);
+
+    window.addEventListener("hashchange", irParaTela);
+    irParaTela();
+  </script>
+</body>
+</html>
