@@ -2,6 +2,7 @@
 package com.equipe.Supermercado.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -46,4 +47,7 @@ public class ProdutoService {
 
         return repository.save(produto);
     }
+      public List<Produto> listarProdutos() {
+      return repository.findAll();
+  }
 }
