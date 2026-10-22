@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+dados_supermercado*.db
+*.trace.db
+bin/
