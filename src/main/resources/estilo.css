@@ -1,0 +1,56 @@
+.root { -tinta: #14201b; -amarelo: #ffd23f; -suave: #4d5b55; -linha: #d9e0da;
+    -fx-font-family: "Segoe UI", Arial, sans-serif; -fx-font-size: 14px; -fx-text-fill: -tinta; }
+.app { -fx-background-color: #edf0eb; }
+.lateral { -fx-background-color: #10241d; -fx-padding: 26 16 26 16; -fx-min-width: 230; }
+.marca { -fx-text-fill: white; -fx-font-size: 20px; -fx-font-weight: bold; -fx-padding: 0 0 24 8; }
+.menu-item { -fx-background-color: transparent; -fx-text-fill: #cfdcd5; -fx-font-weight: bold; -fx-alignment: CENTER_LEFT;
+    -fx-padding: 11 14 11 14; -fx-background-radius: 10; -fx-cursor: hand; }
+.menu-item:hover { -fx-background-color: rgba(255,255,255,0.08); }
+.menu-item:selected { -fx-background-color: -amarelo; -fx-text-fill: -tinta; }
+.titulo { -fx-font-size: 28px; -fx-font-weight: bold; }
+.suave { -fx-text-fill: -suave; -fx-font-size: 12.5px; }
+.nome { -fx-font-weight: bold; }
+.rotulo { -fx-font-weight: bold; }
+
+.cartao { -fx-background-color: white; -fx-background-radius: 12; -fx-border-color: -linha; -fx-border-radius: 12; -fx-padding: 22;
+    -fx-effect: dropshadow(gaussian, rgba(20,32,27,0.08), 12, 0, 0, 3); }
+.ind { -fx-background-color: white; -fx-background-radius: 12; -fx-border-color: -linha; -fx-border-radius: 12; -fx-padding: 14 18 16 18; }
+.ind-rot { -fx-text-fill: -suave; -fx-font-weight: bold; }
+.ind-num { -fx-font-size: 24px; -fx-font-weight: bold; }
+.ind-valor { -fx-background-color: -tinta; -fx-border-color: -tinta; }
+.ind-valor .ind-rot { -fx-text-fill: #b9c9c0; }
+.ind-valor .ind-num { -fx-text-fill: -amarelo; -fx-font-size: 30px; }
+.ind-baixo .ind-num { -fx-text-fill: #8a4f00; }
+.ind-zero .ind-num { -fx-text-fill: #b3261e; }
+
+.text-field { -fx-background-color: white; -fx-border-color: #8b9791; -fx-border-width: 1.5; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 9 12 9 12; }
+.text-field:focused { -fx-border-color: -tinta; }
+
+.table-view { -fx-background-color: transparent; }
+.table-view .column-header-background { -fx-background-color: #f6f8f5; }
+.table-view .column-header, .table-view .filler { -fx-background-color: #f6f8f5; -fx-size: 36; }
+.table-view .column-header .label { -fx-text-fill: -suave; -fx-font-weight: bold; }
+.table-row-cell { -fx-cell-size: 58; -fx-background-color: white; -fx-border-color: transparent transparent #e7ece8 transparent; }
+.table-row-cell:hover { -fx-background-color: #fafbf9; }
+.table-row-cell:selected { -fx-background-color: #f1f4ef; }
+.table-cell { -fx-alignment: CENTER_LEFT; -fx-padding: 0 14 0 14; -fx-text-fill: -tinta; }
+.preco { -fx-background-color: -amarelo; -fx-background-radius: 4 9 9 4; -fx-padding: 4 11 4 11; -fx-font-weight: bold; }
+.selo { -fx-font-size: 12px; -fx-font-weight: bold; -fx-padding: 2 9 2 9; -fx-background-radius: 99; }
+.selo.ok { -fx-text-fill: #17693f; -fx-background-color: #dff1e6; }
+.selo.baixo { -fx-text-fill: #8a4f00; -fx-background-color: #fde7c2; }
+.selo.zero { -fx-text-fill: #b3261e; -fx-background-color: #fbdcd9; }
+
+.botao { -fx-background-color: -tinta; -fx-text-fill: -amarelo; -fx-font-weight: bold; -fx-border-color: -tinta; -fx-border-width: 2;
+    -fx-background-radius: 8; -fx-border-radius: 8; -fx-padding: 9 18 9 18; -fx-cursor: hand; }
+.botao:hover { -fx-background-color: #26352f; }
+.botao.secundario { -fx-background-color: transparent; -fx-text-fill: -tinta; }
+.botao.secundario:hover { -fx-background-color: #e7ece8; }
+.botao:disabled { -fx-opacity: 0.45; }
+
+.mensagem { -fx-padding: 10 14 10 14; -fx-background-radius: 6; }
+.mensagem.sucesso { -fx-background-color: #dff1e6; -fx-text-fill: #17693f; }
+.mensagem.erro { -fx-background-color: #fbdcd9; -fx-text-fill: #b3261e; }
+.previa { -fx-background-color: #f7f9f6; -fx-border-color: -linha -linha -linha -amarelo; -fx-border-width: 1 1 1 5; -fx-padding: 12 14 12 14; -fx-font-weight: bold; }
+.etiqueta { -fx-background-color: -amarelo; -fx-background-radius: 6; -fx-padding: 24 20 16 20; -fx-effect: dropshadow(gaussian, rgba(20,32,27,0.25), 10, 0, 0, 5); }
+.et-nome { -fx-font-size: 18px; -fx-font-weight: bold; }
+.et-preco { -fx-font-size: 38px; -fx-font-weight: bold; }
